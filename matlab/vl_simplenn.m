@@ -175,9 +175,9 @@ for i=1:n
   switch l.type
     case 'conv'
       if isfield(l, 'weights')
-        res(i+1).x = vl_nnconv(res(i).x, l.weights{1}, l.weights{2}, 'pad', l.pad, 'stride', l.stride) ;
+        res(i+1).x = vl_nnconv(res(i).x, l.weights{1}, l.weights{2}, 'pad', l.pad, 'stride', l.stride, 'hole', l.hole) ;
       else
-        res(i+1).x = vl_nnconv(res(i).x, l.filters, l.biases, 'pad', l.pad, 'stride', l.stride) ;
+        res(i+1).x = vl_nnconv(res(i).x, l.filters, l.biases, 'pad', l.pad, 'stride', l.stride, 'hole', l.hole) ;
       end
     case 'pool'
       res(i+1).x = vl_nnpool(res(i).x, l.pool, 'pad', l.pad, 'stride', l.stride, 'method', l.method) ;
@@ -246,13 +246,13 @@ if doder
             [res(i).dzdx, res(i).dzdw{1}, res(i).dzdw{2}] = ...
                 vl_nnconv(res(i).x, l.weights{1}, l.weights{2}, ...
                           res(i+1).dzdx, ...
-                          'pad', l.pad, 'stride', l.stride) ;
+                          'pad', l.pad, 'stride', l.stride, 'hole', l.hole) ;
           else
             % Legacy code: will go
             [res(i).dzdx, res(i).dzdw{1}, res(i).dzdw{2}] = ...
                 vl_nnconv(res(i).x, l.filters, l.biases, ...
                           res(i+1).dzdx, ...
-                          'pad', l.pad, 'stride', l.stride) ;
+                          'pad', l.pad, 'stride', l.stride, 'hole', l.hole) ;
           end
         else
           dzdw = cell(1,2) ;

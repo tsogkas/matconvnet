@@ -28,7 +28,7 @@ the terms of the BSD license (see the COPYING file).
 enum {
   opt_stride = 0,
   opt_pad,
-  opt_holes,
+  opt_hole,
   opt_verbose,
   opt_no_der_data,
   opt_no_der_filters,
@@ -41,7 +41,7 @@ enum {
 vlmxOption  options [] = {
   {"Stride",           1,   opt_stride             },
   {"Pad",              1,   opt_pad                },
-  {"Holes",            1,   opt_holes              },
+  {"Hole",             1,   opt_hole               },
   {"Verbose",          0,   opt_verbose            },
   {"NoDerData",        0,   opt_no_der_data        },
   {"NoDerFilters",     0,   opt_no_der_filters     },
@@ -168,9 +168,9 @@ void mexFunction(int nout, mxArray *out[],
         break ;
 
       // STATSOGK (a trous algorithm)
-      case opt_holes :
+      case opt_hole :
         if (!vlmxIsPlainMatrix(optarg,-1,-1)) {
-          mexErrMsgTxt("HOLES is not a plain matrix.") ;
+          mexErrMsgTxt("HOLE is not a plain matrix.") ;
         }
         switch (mxGetNumberOfElements(optarg)) {
           case 1:
@@ -182,7 +182,7 @@ void mexFunction(int nout, mxArray *out[],
             holeY = (int)mxGetPr(optarg)[1] ;
             break ;
           default:
-            mexErrMsgTxt("HOLES has neither one nor two elements.") ;
+            mexErrMsgTxt("HOLE has neither one nor two elements.") ;
         }
         break ;
 
@@ -249,7 +249,7 @@ void mexFunction(int nout, mxArray *out[],
     mexErrMsgTxt("An element of PAD is negative.") ;
   }
   if (holeX <= 0 || holeY <=0) {
-      mexErrMsgTxt("An element of HOLES is non-positive");
+      mexErrMsgTxt("An element of HOLE is non-positive");
   }
 
   /* Get the filter geometry */
