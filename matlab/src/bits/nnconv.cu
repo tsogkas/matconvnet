@@ -32,7 +32,8 @@ vl::nnconv_forward(Context& context,
                    Tensor biases,
                    int strideY, int strideX,
                    int padTop, int padBottom,
-                   int padLeft, int padRight)
+                   int padLeft, int padRight,
+                   int holeX, int holeY)
 {
   vl::Error status = vlSuccess ;
   switch (output.getMemoryType()) {
@@ -46,7 +47,8 @@ vl::nnconv_forward(Context& context,
       (context, output, data, filters, biases,
        strideY, strideX,
        padTop, padBottom,
-       padLeft, padRight) ;
+       padLeft, padRight,
+       holeX, holeY) ;
       break ;
 
 #if ENABLE_GPU
@@ -67,7 +69,8 @@ vl::nnconv_forward(Context& context,
       (context, output, data, filters, biases,
        strideY, strideX,
        padTop, padBottom,
-       padLeft, padRight) ;
+       padLeft, padRight,
+       holeX, holeY) ;
       break ;
 #endif
   }
@@ -91,7 +94,8 @@ vl::nnconv_backward(Context& context,
                     Tensor derOutput,
                     int strideY, int strideX,
                     int padTop, int padBottom,
-                    int padLeft, int padRight)
+                    int padLeft, int padRight,
+                    int holeX, int holeY)
 {
   vl::Error status = vl::vlSuccess ;
   switch (derOutput.getMemoryType()) {
@@ -107,7 +111,8 @@ vl::nnconv_backward(Context& context,
        data, filters, derOutput,
        strideY, strideX,
        padTop, padBottom,
-       padLeft, padRight) ;
+       padLeft, padRight,
+       holeX, holeY) ;
       break ;
 
 #if ENABLE_GPU
@@ -132,7 +137,8 @@ vl::nnconv_backward(Context& context,
        data, filters, derOutput,
        strideY, strideX,
        padTop, padBottom,
-       padLeft, padRight) ;
+       padLeft, padRight,
+       holeX, holeY) ;
       break;
 #endif
   }

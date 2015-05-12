@@ -28,6 +28,7 @@ the terms of the BSD license (see the COPYING file).
 enum {
   opt_stride = 0,
   opt_pad,
+  opt_holes,
   opt_verbose,
   opt_no_der_data,
   opt_no_der_filters,
@@ -40,6 +41,7 @@ enum {
 vlmxOption  options [] = {
   {"Stride",           1,   opt_stride             },
   {"Pad",              1,   opt_pad                },
+  {"Holes",            1,   opt_holes              },
   {"Verbose",          0,   opt_verbose            },
   {"NoDerData",        0,   opt_no_der_data        },
   {"NoDerFilters",     0,   opt_no_der_filters     },
@@ -86,6 +88,8 @@ void mexFunction(int nout, mxArray *out[],
   int padTop = 0 ;
   int padBottom = 0 ;
   int numFilterGroups = 1 ;
+  int holeX = 1;    // STATSOGK
+  int holeY = 1;    // STATSOGK
 
   bool backMode = false ;
   bool hasFilters = false ;
@@ -163,6 +167,25 @@ void mexFunction(int nout, mxArray *out[],
         }
         break ;
 
+      // STATSOGK (a trous algorithm)
+      case opt_holes :
+        if (!vlmxIsPlainMatrix(optarg,-1,-1)) {
+          mexErrMsgTxt("HOLES is not a plain matrix.") ;
+        }
+        switch (mxGetNumberOfElements(optarg)) {
+          case 1:
+            holeY = (int)mxGetPr(optarg)[0] ;
+            holeX = holeY ;
+            break ;
+          case 2:
+            holeY = (int)mxGetPr(optarg)[0] ;
+            holeY = (int)mxGetPr(optarg)[1] ;
+            break ;
+          default:
+            mexErrMsgTxt("HOLES has neither one nor two elements.") ;
+        }
+        break ;
+
       case opt_no_der_data :
         computeDerData = VL_FALSE ;
         break ;
@@ -225,6 +248,9 @@ void mexFunction(int nout, mxArray *out[],
       padBottom < 0) {
     mexErrMsgTxt("An element of PAD is negative.") ;
   }
+  if (holeX <= 0 || holeY <=0) {
+      mexErrMsgTxt("An element of HOLES is non-positive");
+  }
 
   /* Get the filter geometry */
   vl::TensorGeometry filtersGeom(filters) ;
@@ -285,6 +311,8 @@ void mexFunction(int nout, mxArray *out[],
                         padBottom == 0 &&
                         padLeft == 0 &&
                         padRight == 0 &&
+                        holeX == 1 &&   //STATSOGK
+                        holeY == 1 &&   //STATSOGK
                         numFilterGroups == 1) ;
 
   /* create output buffers */
@@ -394,7 +422,7 @@ void mexFunction(int nout, mxArray *out[],
                                filters,
                                biases,
                                strideY, strideX,
-                               padTop, padBottom, padLeft, padRight) ;
+                               padTop, padBottom, padLeft, padRight, holeX, holeY) ;
   } else {
     error = vl::nnconv_backward(context,
                                 derData,
@@ -404,7 +432,7 @@ void mexFunction(int nout, mxArray *out[],
                                 filters,
                                 derOutput,
                                 strideY, strideX,
-                                padTop, padBottom, padLeft, padRight) ;
+                                padTop, padBottom, padLeft, padRight, holeX, holeY) ;
   }
 
   /* -------------------------------------------------------------- */

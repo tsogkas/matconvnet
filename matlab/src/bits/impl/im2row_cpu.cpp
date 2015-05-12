@@ -45,23 +45,27 @@ static inline int static_min(int a, int b) {
 /* TODO: must transpose */
 
 template <typename T> static inline void
-im2row_cpu(T* stacked,
+im2row_cpu(T* stacked,          // #pixelsInPatch x #nPatches
            T const* data,
-           size_t width,
-           size_t height,
+           size_t width,        // input width
+           size_t height,       // input height
            size_t depth,
-           size_t windowWidth,
-           size_t windowHeight,
+           size_t windowWidth,  // kernel width
+           size_t windowHeight, // kernel height
            size_t strideX,
            size_t strideY,
            size_t padLeft,
            size_t padRight,
            size_t padTop,
-           size_t padBottom)
+           size_t padBottom,
+           size_t holeX,        // STATSOGK (hole_w in gpapan code)
+           size_t holeY)        // STATSOGK (hole_h in gpapan code)
 {
-  int numPatchesX = (width + (padLeft + padRight) - windowWidth)/strideX + 1 ;
-  int numPatchesY = (height + (padTop + padBottom) - windowHeight)/strideY + 1 ;
-  int numRows = windowWidth * windowHeight * depth ;
+  int windowHeightEff = windowHeight + (windowHeight-1) * (holeY - 1);  //(kernel_h_eff in gpapan code)
+  int windowWidthEff  = windowWidth  + (windowWidth-1)  * (holeX - 1);  //(kernel_w_eff in gpapan code)
+  int numPatchesX = (width + (padLeft + padRight) - windowWidthEff)/strideX + 1 ;   // width_col in gpapan code
+  int numPatchesY = (height + (padTop + padBottom) - windowHeightEff)/strideY + 1 ; // height_col in gpapan code
+  int numRows = windowWidth * windowHeight * depth ; // # channels_col in gpapan code elements within each patch (from all 3 dimensions)
 
   /*
    Fill a row of the stacked image at a time. Since patches are stored
@@ -72,16 +76,16 @@ im2row_cpu(T* stacked,
    we tend to access spatially adiacent elements
    in the input image, particulary for small strides.
    */
-  for (int row = 0; row < numRows ; ++row) {
+  for (int row = 0; row < numRows ; ++row) {  // row is c in gpapan code
     /*
      Get the patch offset corresponding to this row of the stacked
      image.
      */
     int u = row ;
     int v = u / windowWidth ;
-    int z = v / windowHeight ;
-    u %= windowWidth ;
-    v %= windowHeight ;
+    int z = v / windowHeight ;         // c_im in gpapan code
+    u  = (u % windowWidth)  * holeX ;  // w_offset in gpapan code
+    v  = (v % windowHeight) * holeY ;  // h_offset in gpapan code
 
     /*
      Filling this row amounts to visiting all the pixels in the input
@@ -116,27 +120,28 @@ im2row_cpu(T* stacked,
     int x ;
     int y ;
 
-    for (y = 0 ; y < y0 ; ++y) {
+
+    for (y = 0 ; y < y0 ; ++y) {        // zero-pad top side of output
       for (x = 0 ; x < numPatchesX ; ++x) {
         *stacked++ = 0 ;
       }
     }
     for ( ; y < y1 ; ++y) {
-      for (x = 0 ; x < x0 ; ++x) {
+      for (x = 0 ; x < x0 ; ++x) {      // zero-pad left side of output
         *stacked++ = 0 ;
       }
-      int y_data = y * strideY + v - padTop ;
-      int x_data = x * strideX + u - padLeft ;
+      int y_data = y * strideY + v - padTop ;   // h_im in gpapan code
+      int x_data = x * strideX + u - padLeft ;  // w_im in gpapan code
       T const * b = data + (z * height + y_data) * width + x_data ;
-      for ( ; x < x1 ; ++x) {
+      for ( ; x < x1 ; ++x) { // assign input value to corresponding output pixel for all patches
         *stacked++ = *b ;
         b += strideX ;
       }
-      for ( ; x < numPatchesX ; ++x) {
+      for ( ; x < numPatchesX ; ++x) {  // zero-pad right side
         *stacked++ = 0 ;
       }
     }
-    for ( ; y < numPatchesY ; ++y) {
+    for ( ; y < numPatchesY ; ++y) {    // zero-pad bottom side
       for (x = 0 ; x < numPatchesX ; ++x) {
         *stacked++ = 0 ;
       }
@@ -151,13 +156,15 @@ vl::impl::im2row<vl::CPU, float>(vl::Context& context,
                                  size_t height, size_t width, size_t depth,
                                  size_t windowHeight, size_t windowWidth,
                                  size_t strideY, size_t strideX,
-                                 size_t padTop, size_t padBottom, size_t padLeft, size_t padRight)
+                                 size_t padTop, size_t padBottom,
+                                 size_t padLeft, size_t padRight,
+                                 size_t holeX, size_t holeY)
 {
   im2row_cpu<float>(stacked, data,
                     height, width, depth,
                     windowHeight, windowWidth,
                     strideY, strideX,
-                    padTop, padBottom, padLeft, padRight) ;
+                    padTop, padBottom, padLeft, padRight,holeX,holeY) ;
   return vlSuccess ;
 }
 
@@ -180,10 +187,14 @@ row2im_cpu(T* data,
            size_t padLeft,
            size_t padRight,
            size_t padTop,
-           size_t padBottom)
+           size_t padBottom,
+           size_t holeX,
+           size_t holeY)
 {
-  int numPatchesX = (width + (padLeft + padRight) - windowWidth)/strideX + 1 ;
-  int numPatchesY = (height + (padTop + padBottom) - windowHeight)/strideY + 1 ;
+  int windowHeightEff = windowHeight + (windowHeight-1) * (holeY - 1);  //(kernel_h_eff in gpapan code)
+  int windowWidthEff  = windowWidth  + (windowWidth-1)  * (holeX - 1);  //(kernel_w_eff in gpapan code)
+  int numPatchesX = (width + (padLeft + padRight) - windowWidthEff)/strideX + 1 ;
+  int numPatchesY = (height + (padTop + padBottom) - windowHeightEff)/strideY + 1 ;
   int numRows = windowWidth * windowHeight * depth ;
 
   memset(data, 0, sizeof(T) * width * height * depth) ;
@@ -195,9 +206,9 @@ row2im_cpu(T* data,
   for (int row = 0; row < numRows ; ++row) {
     int u = row ;
     int v = u / windowWidth ;
-    int z = v / windowHeight ;
-    u %= windowWidth ;
-    v %= windowHeight ;
+    int z = v / windowHeight ;         // c_im in gpapan code
+    u  = (u % windowWidth)  * holeX ;  // w_offset in gpapan code
+    v  = (v % windowHeight) * holeY ;  // h_offset in gpapan code
 
     int x0 = static_min(numPatchesX, ceil_divide(padLeft - u, strideX)) ;
     int y0 = static_min(numPatchesY, ceil_divide(padTop - v, strideY)) ;
@@ -231,12 +242,14 @@ vl::impl::row2im<vl::CPU, float>(vl::Context& context,
                                  size_t height, size_t width, size_t depth,
                                  size_t windowHeight, size_t windowWidth,
                                  size_t strideY, size_t strideX,
-                                 size_t padTop, size_t padBottom, size_t padLeft, size_t padRight)
+                                 size_t padTop, size_t padBottom,
+                                 size_t padLeft, size_t padRight,
+                                 size_t holeX, size_t holeY)
 {
   row2im_cpu<float>(data, stacked,
                     height, width, depth,
                     windowHeight, windowWidth,
                     strideY, strideX,
-                    padTop, padBottom, padLeft, padRight) ;
+                    padTop, padBottom, padLeft, padRight,holeX,holeY) ;
   return vlSuccess ;
 }

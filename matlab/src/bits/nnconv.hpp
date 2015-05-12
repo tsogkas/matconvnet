@@ -26,7 +26,8 @@ namespace vl {
                  vl::Tensor biases,
                  int strideY, int strideX,
                  int padTop, int padBottom,
-                 int padLeft, int padRight) ;
+                 int padLeft, int padRight,
+                 int holeX, int holeY) ;
 
   vl::Error
   nnconv_backward(vl::Context& context,
@@ -38,7 +39,8 @@ namespace vl {
                   vl::Tensor derOutput,
                   int strideY, int strideX,
                   int padTop, int padBottom,
-                  int padLeft, int padRight) ;
+                  int padLeft, int padRight,
+                  int holeX, int holeY) ;
 }
 
 

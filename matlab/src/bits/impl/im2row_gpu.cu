@@ -33,7 +33,9 @@ im2row_gpu_kernel(T* stacked,
                   const int strideX,
                   const int strideY,
                   const int padLeft,
-                  const int padTop)
+                  const int padTop,
+                  const int holeX,
+                  const int holeY)
 {
   /* each kernel copies the pixels in an image patch for one channel */
   int index = threadIdx.x + blockIdx.x * blockDim.x ;
@@ -43,34 +45,34 @@ im2row_gpu_kernel(T* stacked,
      */
     int x = index ;
     int y = x / numPatchesX ;
-    int z = y / numPatchesY ;
-    x %= numPatchesX ;
-    y %= numPatchesY ;
+    int z = y / numPatchesY ;   // c_im
+    x %= numPatchesX ;  // w in gpapan
+    y %= numPatchesY ;  // h in gpapan
 
     /*
      pick the top-left corer of the patch slice in the input image
      */
-    int x_data = x * strideX - padLeft ;
-    int y_data = y * strideY - padTop ;
+    int x_data = x * strideX - padLeft ;    // w_im
+    int y_data = y * strideY - padTop ;     // h_im
     data += (z * height + y_data) * width + x_data ;
 
     /*
      pick the column of the stacked image which contains this patch,
      and move down along the column at the beginning of the patch slice
      */
-    int patchSliceOffset = (windowWidth*windowHeight) * z ;
-    stacked += (numPatchesY * patchSliceOffset + y) * numPatchesX + x ;
+    int patchSliceOffset = (windowWidth*windowHeight) * z ; // c
+    stacked += (numPatchesY * patchSliceOffset + y) * numPatchesX + x ; // data_col
 
     /*
      copy the patch slice
      */
     for (int v = 0 ; v < windowHeight ; ++v) {
       for (int u = 0 ; u < windowWidth ; ++u) {
-        if (y_data + v >= 0 &&
-            y_data + v < height &&
-            x_data + u >= 0 &&
-            x_data + u < width) {
-          *stacked = data[v * width + u] ;
+        if (y_data + v*holeY >= 0 &&
+            y_data + v*holeY < height &&
+            x_data + u*holeX >= 0 &&
+            x_data + u*holeX < width) {
+          *stacked = data[v * holeY * width + u * holeX] ;
         } else {
           *stacked = 0 ;
         }
@@ -93,12 +95,15 @@ im2row_gpu(T* stacked,
            size_t padLeft,
            size_t padRight,
            size_t padTop,
-           size_t padBottom)
+           size_t padBottom,
+           size_t holeX,
+           size_t holeY)
 {
   /* Each kernel instance copies a feature dimension of a patch */
-
-  int numPatchesX = (width + (padLeft + padRight) - windowWidth)/strideX + 1 ;
-  int numPatchesY = (height + (padTop + padBottom) - windowHeight)/strideY + 1 ;
+  int windowHeightEff = windowHeight + (windowHeight-1) * (holeY - 1);  //(kernel_h_eff in gpapan code)
+  int windowWidthEff  = windowWidth  + (windowWidth-1)  * (holeX - 1);  //(kernel_w_eff in gpapan code)
+  int numPatchesX = (width + (padLeft + padRight) - windowWidthEff)/strideX + 1 ;
+  int numPatchesY = (height + (padTop + padBottom) - windowHeightEff)/strideY + 1 ;
   int numPatchSlices = numPatchesX * numPatchesY * depth ;
 
   im2row_gpu_kernel<T>
@@ -111,7 +116,8 @@ im2row_gpu(T* stacked,
    width, height,
    windowWidth, windowHeight,
    strideX, strideY,
-   padLeft, padTop) ;
+   padLeft, padTop,
+   holeX, holeY) ;
 
   return cudaPeekAtLastError() ;
 }
@@ -124,14 +130,16 @@ vl::impl::im2row<vl::GPU, float>(vl::Context& context,
                                  size_t height, size_t width, size_t depth,
                                  size_t windowHeight, size_t windowWidth,
                                  size_t strideY, size_t strideX,
-                                 size_t padTop, size_t padBottom, size_t padLeft, size_t padRight)
+                                 size_t padTop, size_t padBottom,
+                                 size_t padLeft, size_t padRight,
+                                 size_t holeX, size_t holeY)
 {
   int status ;
   status = im2row_gpu<float>(stacked, data,
                              height, width, depth,
                              windowHeight, windowWidth,
                              strideY, strideX,
-                             padTop, padBottom, padLeft, padRight) ;
+                             padTop, padBottom, padLeft, padRight,holeX,holeY) ;
   return (status == cudaSuccess) ? vl::vlSuccess : vl::vlErrorCuda ;
 }
 
@@ -154,8 +162,13 @@ __global__ void row2im_gpu_kernel(T* data,
                                   const int strideX,
                                   const int strideY,
                                   const int padLeft,
-                                  const int padTop)
+                                  const int padTop,
+                                  const int holeX,
+                                  const int holeY)
 {
+  // row2im works in the inverse way than the corresponding caffe function:
+  // for each point in the output image, we find all points in patches that contribute
+  // and accumulate them.
   int index = threadIdx.x + blockIdx.x * blockDim.x;
   if (index < dataVolume)
   {
@@ -178,7 +191,7 @@ __global__ void row2im_gpu_kernel(T* data,
 
      and similar for y.
 
-     Hence, the patches that contribute to (x_data,y_data) are given
+     Hence, the patches that contribute to (x_data,y_d ata) are given
      by indexes (x,y) such that
 
      (x_data + padLeft - windowWidth)/stride < x
@@ -203,8 +216,13 @@ __global__ void row2im_gpu_kernel(T* data,
     x_data %= width ;
     y_data %= height ;
 
-    int dx = x_data + padLeft - windowWidth ;
-    int dy = y_data + padTop - windowHeight ;
+    // not 100% sure if i have to do this. Also: numPatchesX and numPatchesY have
+    // already been adjusted before the call to row2im_gpu_kernel, so we don't
+    // have to re-adjust them here. (STATSOGK)
+    int windowHeightEff = windowHeight + (windowHeight-1) * (holeY - 1);
+    int windowWidthEff  = windowWidth  + (windowWidth-1)  * (holeX - 1);
+    int dx = x_data + padLeft - windowWidthEff ; // distance from the start of the corresponding patch in the original image
+    int dy = y_data + padTop  - windowHeightEff ;
     int x1 = (dx >= 0) ? dx/strideX + 1 : 0 ;
     int y1 = (dy >= 0) ? dy/strideY + 1 : 0 ;
     int x2 = min((x_data + padLeft) / strideX, numPatchesX - 1) ;
@@ -239,12 +257,13 @@ __global__ void row2im_gpu_kernel(T* data,
 
      */
 
+    // stacked is effectively a nPixelsInPatch x nPatches array
     int deltax = (1 - strideX * numPatchesY * numPatchesX) ;
     int deltay = (1 - strideY * numPatchesY * windowWidth) * numPatchesX ;
     stacked += ((z * windowHeight + y_data + padTop) * windowWidth + (x_data + padLeft)) * (numPatchesX*numPatchesY) ;
 
-    for (int y = y1 ; y <= y2 ; ++ y) {
-      for (int x = x1 ; x <= x2 ; ++ x) {
+    for (int y = y1 ; y <= y2 ; y += holeY) {
+      for (int x = x1 ; x <= x2 ; x += holeX) {
         accumulator += stacked[y * deltay + x * deltax];
       }
     }
@@ -265,15 +284,19 @@ row2im_gpu(T* data,
            size_t padLeft,
            size_t padRight,
            size_t padTop,
-           size_t padBottom)
+           size_t padBottom,
+           size_t holeX,
+           size_t holeY)
 {
   /*
    Each kernel integrates all contributions to a particular element
    of data.
    */
 
-  int numPatchesX = (width + (padLeft + padRight) - windowWidth)/strideX + 1 ;
-  int numPatchesY = (height + (padTop + padBottom) - windowHeight)/strideY + 1 ;
+  int windowHeightEff = windowHeight + (windowHeight-1) * (holeY - 1);  //(kernel_h_eff in gpapan code)
+  int windowWidthEff  = windowWidth  + (windowWidth-1)  * (holeX - 1);  //(kernel_w_eff in gpapan code)
+  int numPatchesX = (width + (padLeft + padRight) - windowWidthEff)/strideX + 1 ;
+  int numPatchesY = (height + (padTop + padBottom) - windowHeightEff)/strideY + 1 ;
   int dataVolume = width * height * depth ;
 
   row2im_gpu_kernel<T>
@@ -286,7 +309,8 @@ row2im_gpu(T* data,
    width, height, depth,
    windowWidth, windowHeight,
    strideX, strideY,
-   padLeft, padTop) ;
+   padLeft, padTop,
+   holeX, holeY) ;
 
   return cudaPeekAtLastError() ;
 }
@@ -298,13 +322,15 @@ vl::impl::row2im<vl::GPU, float>(vl::Context& context,
                                  size_t height, size_t width, size_t depth,
                                  size_t windowHeight, size_t windowWidth,
                                  size_t strideY, size_t strideX,
-                                 size_t padTop, size_t padBottom, size_t padLeft, size_t padRight)
+                                 size_t padTop, size_t padBottom,
+                                 size_t padLeft, size_t padRight,
+                                 size_t holeX, size_t holeY)
 {
   int status ;
   status = row2im_gpu<float>(data, stacked,
                              height, width, depth,
                              windowHeight, windowWidth,
                              strideY, strideX,
-                             padTop, padBottom, padLeft, padRight) ;
+                             padTop, padBottom, padLeft, padRight,holeX,holeY) ;
   return (status == cudaSuccess) ? vl::vlSuccess : vl::vlErrorCuda ;
 }

@@ -25,7 +25,9 @@ namespace vl { namespace impl {
          size_t height, size_t width, size_t depth,
          size_t windowHeight, size_t windowWidth,
          size_t strideY, size_t strideX,
-         size_t padTop, size_t padBottom, size_t padLeft, size_t padRight) ;
+         size_t padTop, size_t padBottom,
+         size_t padLeft, size_t padRight,
+         size_t holeX, size_t holeY) ;
 
   template<vl::Device dev, typename type> vl::Error
   row2im(vl::Context& context,
@@ -34,7 +36,9 @@ namespace vl { namespace impl {
          size_t height, size_t width, size_t depth,
          size_t windowHeight, size_t windowWidth,
          size_t strideY, size_t strideX,
-         size_t padTop, size_t padBottom, size_t padLeft, size_t padRight) ;
+         size_t padTop, size_t padBottom,
+         size_t padLeft, size_t padRight,
+         size_t holeX, size_t holeY) ;
 
 
   /* Specializations */
@@ -46,7 +50,9 @@ namespace vl { namespace impl {
                          size_t height, size_t width, size_t depth,
                          size_t windowHeight, size_t windowWidth,
                          size_t strideY, size_t strideX,
-                         size_t padTop, size_t padBottom, size_t padLeft, size_t padRight) ;
+                         size_t padTop, size_t padBottom,
+                         size_t padLeft, size_t padRight,
+                         size_t holeX, size_t holeY) ;
 
   template<> vl::Error
   row2im<vl::CPU, float>(vl::Context& context,
@@ -55,7 +61,9 @@ namespace vl { namespace impl {
                          size_t height, size_t width, size_t depth,
                          size_t windowHeight, size_t windowWidth,
                          size_t strideY, size_t strideX,
-                         size_t padTop, size_t padBottom, size_t padLeft, size_t padRight) ;
+                         size_t padTop, size_t padBottom,
+                         size_t padLeft, size_t padRight,
+                         size_t holeX, size_t holeY) ;
 
 #if ENABLE_GPU
   template<> vl::Error
@@ -65,7 +73,9 @@ namespace vl { namespace impl {
                          size_t height, size_t width, size_t depth,
                          size_t windowHeight, size_t windowWidth,
                          size_t strideY, size_t strideX,
-                         size_t padTop, size_t padBottom, size_t padLeft, size_t padRight) ;
+                         size_t padTop, size_t padBottom,
+                         size_t padLeft, size_t padRight,
+                         size_t holeX, size_t holeY) ;
 
   template<> vl::Error
   row2im<vl::GPU, float>(vl::Context& context,
@@ -74,7 +84,9 @@ namespace vl { namespace impl {
                          size_t height, size_t width, size_t depth,
                          size_t windowHeight, size_t windowWidth,
                          size_t strideY, size_t strideX,
-                         size_t padTop, size_t padBottom, size_t padLeft, size_t padRight) ;
+                         size_t padTop, size_t padBottom,
+                         size_t padLeft, size_t padRight,
+                         size_t holeX, size_t holeY) ;
 #endif
 
 } }
