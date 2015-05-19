@@ -213,8 +213,10 @@ for i=1:n
       end
     case 'pdist'
       res(i+1) = vl_nnpdist(res(i).x, l.p, 'noRoot', l.noRoot, 'epsilon', l.epsilon) ;
-    case 'custom'
-      res(i+1) = l.forward(l, res(i), res(i+1)) ;
+    case 'rbm'  % PLEASE COMPLETE ME
+      res(i+1) = vl_nnrbm(res(i).x, l);
+    case 'sigmoidNoisy'
+        res(i+1).x = vl_nnsigmoidNoisy(res(i).x) ;
     otherwise
       error('Unknown layer type %s', l.type) ;
   end
