@@ -129,14 +129,14 @@ args = parser.parse_args()
 print 'Caffe variant set to', args.caffe_variant
 if args.caffe_variant == 'vgg-caffe':
   import proto.vgg_caffe_pb2 as caffe_pb2
-elif args.caffe_variant == 'vgg-deepseg'
-  import proto.vgg_caffe_pb2 as caffe_pb2
+elif args.caffe_variant == 'vgg-deeplab':
+  import proto.vgg_deeplab_pb2 as caffe_pb2
 elif args.caffe_variant == 'caffe-old':
   import proto.caffe_old_pb2 as caffe_pb2
 elif args.caffe_variant == 'caffe':
   import proto.caffe_pb2 as caffe_pb2
 elif args.caffe_variant == '?':
-  print 'Supported variants: caffe, cafe-old, vgg-caffe'
+  print 'Supported variants: caffe, cafe-old, vgg-caffe, vgg-deeplab'
   sys.exit(0)
 else:
   print 'Unknown Caffe variant', args.caffe_variant
@@ -169,10 +169,10 @@ def keyboard(banner=None):
     except SystemExit:
         return
 
-def get_output_size(size, filter_support, pad, stride):
+def get_output_size(size, filter_support, pad, stride, hole=1):
   return [ \
-      floor((size[0] + pad[0]+pad[1] - filter_support[0]) / stride[0]) + 1, \
-      floor((size[1] + pad[2]+pad[3] - filter_support[1]) / stride[1]) + 1]
+      floor((size[0] + pad[0]+pad[1] - filter_support[0] - (filter_support[0]-1)*(hole[0]-1)) / stride[0]) + 1, \
+      floor((size[1] + pad[2]+pad[3] - filter_support[1] - (filter_support[1]-1)*(hole[1]-1)) / stride[1]) + 1]
 
 def bilinear_interpolate(im, x, y):
   x = np.asarray(x)
@@ -324,6 +324,7 @@ for name in layers_name_param:
     else: support = [param.kernel_size]*2
     pad = [param.pad]*4
     stride = [param.stride]*2
+    hole = [param.hole]*2
     num_output_channels = param.num_output
     if len(arrays) >= 1:
       mk['weights'][0,0] = arrays[0]
@@ -336,6 +337,7 @@ for name in layers_name_param:
       mk['weights'][0,1] = np.zeros([1,num_output_channels],dtype='float32')
     mk['pad'] = pad
     mk['stride'] = stride
+    mk['hole'] = hole
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   elif ltype == 'relu':
     mk['type'] = 'relu'
@@ -357,6 +359,7 @@ for name in layers_name_param:
     else: support = [param.kernel_size]*2
     pad = [param.pad]*4
     stride = [param.stride]*2
+    hole = [1]*2
     #if layer_input_size[0] % 2 == 0: pad[1] += 1
     #if layer_input_size[1] % 2 == 0: pad[3] += 1
     pad[1] += ceil((layer_input_size[0]-support[0])/float(stride[0]))*stride[0] \
@@ -375,6 +378,7 @@ for name in layers_name_param:
     support = [layer_input_size[0], layer_input_size[1]]
     pad = [0]*4
     stride = [1]*2
+    hole = [1]*2
     num_output_channels = param.num_output
     if len(arrays) >= 1:
       mk['weights'][0,0] = arrays[0].reshape(
@@ -412,10 +416,12 @@ for name in layers_name_param:
   print '  Support:',support
   print '  Pad:',pad
   print '  Stride:',stride
-  for f in ['pad', 'stride', 'pool']:
+  print '  Hole:', hole
+  for f in ['pad', 'stride', 'pool', 'hole']:
     if f in mk: mk[f] = [float(i) for i in mk[f]]
   layer_input_size = get_output_size(layer_input_size,
-                                     support, pad, stride) + [num_output_channels]
+                                     support, pad, stride, hole) + [num_output_channels]
+#  print 'Output size:', layer_input_size                                     
   matlab_layers.append(mk)
 
 # --------------------------------------------------------------------
