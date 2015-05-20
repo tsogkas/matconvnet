@@ -26,7 +26,8 @@ namespace vl { namespace impl {
                        Tensor biases,
                        int strideX, int strideY,
                        int padLeft, int padRight,
-                       int padTop, int padBottom) ;
+                       int padTop, int padBottom,
+                       int holeX, int holeY) ;
 
   template<typename type> vl::Error
   nnconv_backward_cudnn(Context& context,
@@ -38,7 +39,8 @@ namespace vl { namespace impl {
                         Tensor derOutput,
                         int strideX, int strideY,
                         int padLeft, int padRight,
-                        int padTop, int padBottom) ;
+                        int padTop, int padBottom,
+                        int holeX, int holeY) ;
 
   /* specializations */
 
@@ -50,7 +52,8 @@ namespace vl { namespace impl {
                               Tensor biases,
                               int strideX, int strideY,
                               int padLeft, int padRight,
-                              int padTop, int padBottom) ;
+                              int padTop, int padBottom,
+                              int holeX, int holeY) ;
 
   template<> vl::Error
   nnconv_backward_cudnn<float>(Context& context,
@@ -62,7 +65,8 @@ namespace vl { namespace impl {
                                Tensor derOutput,
                                int strideX, int strideY,
                                int padLeft, int padRight,
-                               int padTop, int padBottom) ;
+                               int padTop, int padBottom,
+                               int holeX, int holeY) ;
 } }
 
 #endif /* defined(__vl__nnconv_cudnn__) */

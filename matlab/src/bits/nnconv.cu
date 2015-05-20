@@ -59,7 +59,8 @@ vl::nnconv_forward(Context& context,
         (context, output, data, filters, biases,
          strideY, strideX,
          padTop, padBottom,
-         padLeft, padRight) ;
+         padLeft, padRight,
+         holeX,holeY) ;
         if (status == vl::vlSuccess) { return status ; }
         if (status != vl::vlErrorUnsupported) { goto done ; }
         /* this case was not supported by CUDNN -- fallback */
