@@ -38,12 +38,13 @@ opts.errorFunction = 'multiclass' ;
 opts.errorLabels = {} ;
 opts.plotDiagnostics = false ;
 opts.memoryMapFile = fullfile(tempdir, 'matconvnet.bin') ;
+opts.nLabels = 3;
 opts = vl_argparse(opts, varargin) ;
 
 if ~exist(opts.expDir, 'dir'), mkdir(opts.expDir) ; end
-if isempty(opts.train), opts.train = find(imdb.images.set==1) ; end
-if isempty(opts.val), opts.val = find(imdb.images.set==2) ; end
-if isnan(opts.train), opts.train = [] ; end
+% if isempty(opts.train), opts.train = find(imdb.images.set==1) ; end
+% if isempty(opts.val), opts.val = find(imdb.images.set==2) ; end
+% if isnan(opts.train), opts.train = [] ; end
 
 % -------------------------------------------------------------------------
 %                                                    Network initialization

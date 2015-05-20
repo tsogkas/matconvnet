@@ -126,8 +126,10 @@ parser.add_argument('--no-remove-dropout',
 parser.set_defaults(remove_dropout=True)
 args = parser.parse_args()
 
-print 'Caffe varaint set to', args.caffe_variant
+print 'Caffe variant set to', args.caffe_variant
 if args.caffe_variant == 'vgg-caffe':
+  import proto.vgg_caffe_pb2 as caffe_pb2
+elif args.caffe_variant == 'vgg-deepseg'
   import proto.vgg_caffe_pb2 as caffe_pb2
 elif args.caffe_variant == 'caffe-old':
   import proto.caffe_old_pb2 as caffe_pb2

@@ -42,7 +42,7 @@ then
     )
 fi
 
-if true
+if false
 then
     base="$data/tmp/vgg/"
     in=(VGG_ILSVRC_19_layers VGG_ILSVRC_16_layers)
@@ -70,7 +70,7 @@ fi
 # VGG Return of the Devil
 # --------------------------------------------------------------------
 
-if true
+if false
 then
     (
         cd "$data/tmp/vgg"
@@ -83,7 +83,7 @@ then
     )
 fi
 
-if true
+if false
 then
     base="$data/tmp/vgg/$VGG_DEEPEVAL/models"
     in=(CNN_F CNN_M CNN_S CNN_M_128 CNN_M_1024 CNN_M_2048)
@@ -111,7 +111,7 @@ fi
 # Caffe Reference Models
 # --------------------------------------------------------------------
 
-if true
+if false
 then
     (
         cd "$data/tmp/caffe"
@@ -124,7 +124,7 @@ then
     )
 fi
 
-if true
+if false
 then
     base=$data/tmp/caffe
 
