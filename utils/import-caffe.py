@@ -304,7 +304,7 @@ for name in layers_name_param:
 
   if name in layers_name_data:
     index = layers_name_data.index(name)
-    if args.caffe_variant in ['caffe']:
+    if args.caffe_variant in ['caffe','vgg-deeplab']:
       layer_data = net_data.layers[index]
     else:
       layer_data = net_data.layers[index].layer

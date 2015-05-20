@@ -179,7 +179,7 @@ void mexFunction(int nout, mxArray *out[],
             break ;
           case 2:
             holeY = (int)mxGetPr(optarg)[0] ;
-            holeY = (int)mxGetPr(optarg)[1] ;
+            holeX = (int)mxGetPr(optarg)[1] ;
             break ;
           default:
             mexErrMsgTxt("HOLE has neither one nor two elements.") ;
@@ -253,6 +253,8 @@ void mexFunction(int nout, mxArray *out[],
   }
 
   /* Get the filter geometry */
+  /* We should probably change the checks here to account for the hole parameter
+   * but at this point it wouldn't affect the result (hopefully) */
   vl::TensorGeometry filtersGeom(filters) ;
   int equivalentNumFilters ;
   if (hasFilters) {
@@ -280,8 +282,11 @@ void mexFunction(int nout, mxArray *out[],
   }
 
   /* Get the output geometry */
-  vl::TensorGeometry outputGeom((data.getHeight() + (padTop+padBottom) - filtersGeom.getHeight())/strideY + 1,
-                                (data.getWidth()  + (padLeft+padRight) - filtersGeom.getWidth())/strideX + 1,
+  // However we have to take the holes into account for the output geometry
+  vl::TensorGeometry outputGeom((data.getHeight() + (padTop+padBottom) - filtersGeom.getHeight()
+                                 - (filtersGeom.getHeight()-1)*(holeY-1))/strideY + 1,
+                                (data.getWidth()  + (padLeft+padRight) - filtersGeom.getWidth()
+                                 - (filtersGeom.getWidth()-1)*(holeX-1))/strideX + 1,
                                 equivalentNumFilters,
                                 data.getSize()) ;
 
