@@ -214,7 +214,7 @@ for i=1:n
     case 'pdist'
       res(i+1) = vl_nnpdist(res(i).x, l.p, 'noRoot', l.noRoot, 'epsilon', l.epsilon) ;
     case 'rbm'  % PLEASE COMPLETE ME
-      res(i+1) = vl_nnrbm(res(i).x, l);
+      res(i+1) = vl_nnrbm(res(i).x, l.weights{1},l.weights{2},l.nHidden,l.nVisible,l.nLabels);
     case 'sigmoidNoisy'
         res(i+1).x = vl_nnsigmoidNoisy(res(i).x) ;
     otherwise
