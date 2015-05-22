@@ -213,8 +213,11 @@ for i=1:n
       end
     case 'pdist'
       res(i+1) = vl_nnpdist(res(i).x, l.p, 'noRoot', l.noRoot, 'epsilon', l.epsilon) ;
+    % MY LAYERS
+    case 'reshape'
+      res(i+1).x = vl_nnreshape(res(i).x, l.outSize);
     case 'rbm'  % PLEASE COMPLETE ME
-      res(i+1) = vl_nnrbm(res(i).x, l.weights{1},l.weights{2},l.nHidden,l.nVisible,l.nLabels);
+      res(i+1).x = vl_nnrbm(res(i).x, l.weights{1},l.weights{2},l.nHidden,l.nVisible,l.nLabels);
     case 'sigmoidNoisy'
         res(i+1).x = vl_nnsigmoidNoisy(res(i).x) ;
     otherwise
@@ -337,6 +340,9 @@ if doder
       case 'pdist'
         res(i).dzdx = vl_nnpdist(res(i).x, l.p, res(i+1).dzdx, ...
                                  'noRoot', l.noRoot, 'epsilon', l.epsilon) ;
+      % MY LAYERS
+      case 'reshape'
+        res(i).dzdx = vl_nnreshape(res(i+1).dzdx, size(res(i).x));
       case 'custom'
         res(i) = l.backward(l, res(i), res(i+1)) ;
     end
