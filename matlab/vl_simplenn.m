@@ -216,10 +216,10 @@ for i=1:n
     % MY LAYERS
     case 'reshape'
       res(i+1).x = vl_nnreshape(res(i).x, l.outSize);
-    case 'rbm'  % PLEASE COMPLETE ME
-      res(i+1).x = vl_nnrbm(res(i).x, l.weights{1},l.weights{2},l.nHidden,l.nVisible,l.nLabels);
+    case 'rbm'  
+      res(i+1).x = vl_nnrbm(res(i).x, l.weights{1},l.weights{2},[], l.imageSize, l.nLabels);
     case 'sigmoidNoisy'
-        res(i+1).x = vl_nnsigmoidNoisy(res(i).x) ;
+      [res(i+1).x, res(i+1).aux] = vl_nnsigmoidNoisy(res(i).x) ;
     otherwise
       error('Unknown layer type %s', l.type) ;
   end
@@ -343,6 +343,12 @@ if doder
       % MY LAYERS
       case 'reshape'
         res(i).dzdx = vl_nnreshape(res(i+1).dzdx, size(res(i).x));
+      case 'rbm'
+        [res(i).dzdx, res(i).dzdw{1}, res(i).dzdw{2}] = ...
+            vl_nnrbm(res(i).x, l.weights{1}, l.weights{2}, res(i+1).dzdx,...
+            l.imageSize, l.nLabels);
+      case 'sigmoidNoisy'
+        res(i).dzdx = vl_nnsigmoidNoisy(res(i).x, res(i+1).dzdx, res(i+1).aux);
       case 'custom'
         res(i) = l.backward(l, res(i), res(i+1)) ;
     end
