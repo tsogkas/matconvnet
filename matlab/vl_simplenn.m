@@ -175,6 +175,7 @@ for i=1:n
   switch l.type
     case 'conv'
       if isfield(l, 'weights')
+        if ~isfield(l,'hole'), l.hole = 1; end
         res(i+1).x = vl_nnconv(res(i).x, l.weights{1}, l.weights{2}, 'pad', l.pad, 'stride', l.stride, 'hole', l.hole) ;
       else
         res(i+1).x = vl_nnconv(res(i).x, l.filters, l.biases, 'pad', l.pad, 'stride', l.stride, 'hole', l.hole) ;
@@ -248,6 +249,7 @@ if doder
       case 'conv'
         if ~opts.accumulate
           if isfield(l, 'weights')
+            if ~isfield(l, 'hole'), l.hole = 1; end;
             [res(i).dzdx, res(i).dzdw{1}, res(i).dzdw{2}] = ...
                 vl_nnconv(res(i).x, l.weights{1}, l.weights{2}, ...
                           res(i+1).dzdx, ...
