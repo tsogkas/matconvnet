@@ -219,6 +219,8 @@ for i=1:n
       res(i+1).x = vl_nnreshape(res(i).x, l.outSize);
     case 'rbm'  
       res(i+1).x = vl_nnrbm(res(i).x, l.weights{1},l.weights{2},[], l.imageSize, l.nLabels);
+    case 'bernoulli'
+      res(i+1).x = vl_nnbernoulli(res(i).x);
     case 'sigmoidNoisy'
       [res(i+1).x, res(i+1).aux] = vl_nnsigmoidNoisy(res(i).x) ;
     otherwise
@@ -349,6 +351,8 @@ if doder
         [res(i).dzdx, res(i).dzdw{1}, res(i).dzdw{2}] = ...
             vl_nnrbm(res(i).x, l.weights{1}, l.weights{2}, res(i+1).dzdx,...
             l.imageSize, l.nLabels);
+      case 'bernoulli'
+        res(i).dzdx = vl_nnbernoulli(res(i).x, res(i+1).dzdx);        
       case 'sigmoidNoisy'
         res(i).dzdx = vl_nnsigmoidNoisy(res(i).x, res(i+1).dzdx, res(i+1).aux);
       case 'custom'
