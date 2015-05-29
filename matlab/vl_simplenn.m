@@ -223,6 +223,8 @@ for i=1:n
       res(i+1).x = vl_nnbernoulli(res(i).x);
     case 'sigmoidNoisy'
       [res(i+1).x, res(i+1).aux] = vl_nnsigmoidNoisy(res(i).x) ;
+    case 'reparametrize'
+      [res(i+1).x, res(i+1).aux] = vl_nnreparametrize(res(i).x) ;
     otherwise
       error('Unknown layer type %s', l.type) ;
   end
@@ -355,6 +357,8 @@ if doder
         res(i).dzdx = vl_nnbernoulli(res(i+1).x, res(i+1).dzdx);        
       case 'sigmoidNoisy'
         res(i).dzdx = vl_nnsigmoidNoisy(res(i).x, res(i+1).dzdx, res(i+1).aux);
+      case 'reparametrize'
+        res(i).dzdx = vl_nnreparametrize(res(i).x, res(i+1).dzdx, res(i+1).aux);
       case 'custom'
         res(i) = l.backward(l, res(i), res(i+1)) ;
     end
