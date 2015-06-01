@@ -224,9 +224,11 @@ for i=1:n
     case 'sigmoidNoisy'
       [res(i+1).x, res(i+1).aux] = vl_nnsigmoidNoisy(res(i).x) ;
     case 'reparametrize'
-      [res(i+1).x, res(i+1).aux] = vl_nnreparametrize(res(i).x) ;
+      [res(i+1).x, res(i).aux{1}, res(i).aux{2}, res(i).aux{3} ] = vl_nnreparametrize(res(i).x) ;
     case 'tanh'
       res(i+1).x = vl_nntanh(res(i).x);
+    case 'variationloss'
+      res(i+1).x = vl_nnvariationloss(res(i).x, l.class,[],res(i-3).aux{2},res(i-3).aux{3}) ;
     otherwise
       error('Unknown layer type %s', l.type) ;
   end
@@ -360,9 +362,11 @@ if doder
       case 'sigmoidNoisy'
         res(i).dzdx = vl_nnsigmoidNoisy(res(i).x, res(i+1).dzdx, res(i+1).aux);
       case 'reparametrize'
-        res(i).dzdx = vl_nnreparametrize(res(i).x, res(i+1).dzdx, res(i+1).aux);
+        res(i).dzdx = vl_nnreparametrize(res(i).x, res(i+1).dzdx, res(i).aux{1}); % res(i).aux{1} is the noise e
       case 'tanh'
         res(i).dzdx = vl_nntanh(res(i).x, res(i+1).dzdx);        
+      case 'variationloss'  % res(i-3).aux{2}/{3} are the mus and sigmas from the reparametrize layer
+        res(i).dzdx = vl_nnvariationloss(res(i).x, l.class, res(i+1).dzdx,res(i-3).aux{2},res(i-3).aux{3}) ;        
       case 'custom'
         res(i) = l.backward(l, res(i), res(i+1)) ;
     end
