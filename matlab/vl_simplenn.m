@@ -230,7 +230,9 @@ for i=1:n
     case 'variationloss'
       res(i+1).x = vl_nnvariationloss(res(i).x, l.class,[],res(i-2).aux{2},res(i-2).aux{3}) ;
     case 'softmaxlossmax'
-      res(i+1).x = vl_nnsoftmaxlossmax(res(i).x, l.class) ;      
+      [res(i+1).x, res(i).aux, res(i).x] = vl_nnsoftmaxlossmax(res(i).x, l.class) ;     
+    case 'softmaxlossIgnore'
+      res(i+1).x = vl_nnsoftmaxlossIgnore(res(i).x, l.class) ;      
     otherwise
       error('Unknown layer type %s', l.type) ;
   end
@@ -260,6 +262,12 @@ if doder
         if ~opts.accumulate
           if isfield(l, 'weights')
             if ~isfield(l, 'hole'), l.hole = 1; end;
+            % keep the elements corresponding to the try that gives best score
+            if (i+2)<=numel(net.layers) && strcmp(net.layers{i+2}.type, 'softmaxlossmax')  
+                sz = [size(res(i+2).x,4), 10];
+                inds = sub2ind([sz(1),sz(2)], 1:sz(1), res(i+2).aux);
+                res(i).x = res(i).x(:,:,:,inds);
+            end
             [res(i).dzdx, res(i).dzdw{1}, res(i).dzdw{2}] = ...
                 vl_nnconv(res(i).x, l.weights{1}, l.weights{2}, ...
                           res(i+1).dzdx, ...
@@ -364,13 +372,15 @@ if doder
       case 'sigmoidNoisy'
         res(i).dzdx = vl_nnsigmoidNoisy(res(i).x, res(i+1).dzdx, res(i+1).aux);
       case 'reparametrize'
-        res(i).dzdx = vl_nnreparametrize(res(i).x, res(i+1).dzdx, res(i).aux{1}); % res(i).aux{1} is the noise e
+        res(i).dzdx = vl_nnreparametrize(res(i).x, res(i+1).dzdx, res(i).aux{1}, res(i+3).aux); % res(i).aux{1} is the noise e
       case 'tanh'
         res(i).dzdx = vl_nntanh(res(i).x, res(i+1).dzdx);        
       case 'variationloss'  % res(i-3).aux{2}/{3} are the mus and sigmas from the reparametrize layer
         res(i).dzdx = vl_nnvariationloss(res(i).x, l.class, res(i+1).dzdx,res(i-2).aux{2},res(i-2).aux{3}) ;        
       case 'softmaxlossmax'
-        res(i).dzdx = vl_nnsoftmaxlossmax(res(i).x, l.class, res(i+1).dzdx) ;        
+        [res(i).dzdx] = vl_nnsoftmaxlossmax(res(i).x, l.class, res(i+1).dzdx, res(i).aux) ;        
+      case 'softmaxlossIgnore'
+        res(i).dzdx = vl_nnsoftmaxlossIgnore(res(i).x, l.class, res(i+1).dzdx) ;
       case 'custom'
         res(i) = l.backward(l, res(i), res(i+1)) ;
     end
