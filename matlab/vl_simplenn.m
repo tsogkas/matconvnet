@@ -229,6 +229,8 @@ for i=1:n
       res(i+1).x = vl_nntanh(res(i).x);
     case 'variationloss'
       res(i+1).x = vl_nnvariationloss(res(i).x, l.class,[],res(i-2).aux{2},res(i-2).aux{3}) ;
+    case 'softmaxlossmax'
+      res(i+1).x = vl_nnsoftmaxlossmax(res(i).x, l.class) ;      
     otherwise
       error('Unknown layer type %s', l.type) ;
   end
@@ -367,6 +369,8 @@ if doder
         res(i).dzdx = vl_nntanh(res(i).x, res(i+1).dzdx);        
       case 'variationloss'  % res(i-3).aux{2}/{3} are the mus and sigmas from the reparametrize layer
         res(i).dzdx = vl_nnvariationloss(res(i).x, l.class, res(i+1).dzdx,res(i-2).aux{2},res(i-2).aux{3}) ;        
+      case 'softmaxlossmax'
+        res(i).dzdx = vl_nnsoftmaxlossmax(res(i).x, l.class, res(i+1).dzdx) ;        
       case 'custom'
         res(i) = l.backward(l, res(i), res(i+1)) ;
     end
