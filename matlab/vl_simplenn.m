@@ -239,7 +239,7 @@ for i=1:n
   % optionally forget intermediate results
   forget = opts.conserveMemory ;
   forget = forget & (~doder || strcmp(l.type, 'relu')) ;
-  forget = forget & ~(strcmp(l.type, 'loss') || strcmp(l.type, 'softmaxloss')) ;
+  forget = forget & ~ismember(l.type, {'loss','softmaxloss','softmaxlossmax','softmaxlossIgnore'}) ;
   forget = forget & (~isfield(l, 'rememberOutput') || ~l.rememberOutput) ;
   if forget
     res(i).x = [] ;
