@@ -216,12 +216,14 @@ __global__ void row2im_gpu_kernel(T* data,
     x_data %= width ;
     y_data %= height ;
 
-    // x1,x2,y1,y2 is the range of the coordinates of the center points of the
+    // x1,x2,y1,y2 is the range of the
     // patches that contribute to data[index]. For each one of those patches we
     // also have to find exactly which pixels in the patch contribute, taking
     // holes into account.
-    int dx = x_data + padLeft - windowWidth ;
-    int dy = y_data + padTop  - windowHeight ;
+    int windowHeightEff = windowHeight + (windowHeight-1) * (holeY - 1);  //(kernel_h_eff in gpapan code)
+    int windowWidthEff  = windowWidth  + (windowWidth-1)  * (holeX - 1);  //(kernel_w_eff in gpapan code)
+    int dx = x_data + padLeft - windowWidthEff ;
+    int dy = y_data + padTop  - windowHeightEff ;
     int x1 = (dx >= 0) ? dx/strideX + 1 : 0 ;
     int y1 = (dy >= 0) ? dy/strideY + 1 : 0 ;
     int x2 = min((x_data + padLeft) / strideX, numPatchesX - 1) ;
@@ -258,17 +260,17 @@ __global__ void row2im_gpu_kernel(T* data,
 
     // stacked is effectively a nPatches x nPixelsPerPatch array
     int deltax = (1 - strideX * numPatchesY * numPatchesX) ;
-    int deltay = (1 - strideY * numPatchesY * windowWidth) * numPatchesX ;
-    stacked += ((z * windowHeight + y_data + padTop) * windowWidth + (x_data + padLeft)) * (numPatchesX*numPatchesY) ;
+    int deltay = (1 - strideY * numPatchesY * windowHeightEff) * numPatchesX ;
+    stacked += ((z * windowHeight + y_data + padTop) * windowHeight + (x_data + padLeft)) * (numPatchesX*numPatchesY) ;
 
     for (int y = y1 ; y <= y2 ; ++y) {
       for (int x = x1 ; x <= x2 ; ++x) {
-        int yOffsetFromPatchStart = y_data - y*strideY + padTop;
-        int xOffsetFromPatchStart = x_data - x*strideX + padLeft;
-        bool isHole = (yOffsetFromPatchStart % holeY) | (xOffsetFromPatchStart % holeX);
-        if (!isHole) {
+//        int yOffsetFromPatchStart = y_data - y*strideY + padTop;
+//        int xOffsetFromPatchStart = x_data - x*strideX + padLeft;
+//        bool isHole = (yOffsetFromPatchStart % holeY) | (xOffsetFromPatchStart % holeX);
+//        if (!isHole) {
           accumulator += stacked[y * deltay + x * deltax];
-        }
+//        }
       }
     }
     data[index] = accumulator;
@@ -311,7 +313,7 @@ row2im_gpu(T* data,
    numPatchesY,
    dataVolume,
    width, height, depth,
-   windowWidthEff, windowHeightEff,
+   windowWidth, windowHeight,
    strideX, strideY,
    padLeft, padTop,
    holeX, holeY);

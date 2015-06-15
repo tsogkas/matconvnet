@@ -98,7 +98,7 @@ im2row_cpu(T* stacked,          // #pixelsInPatch x #nPatches
      z_data(z) = z.
 
      Here (x,y) are the spatial indexes of the output patches. Depending
-     on the padding, some of these values will read pixels outised
+     on the padding, some of these values will read pixels outside
      the input image, which should default to 0. In particular, x lands
      on a x_data(x) within the image if x0 <= x < x1 where:
 
