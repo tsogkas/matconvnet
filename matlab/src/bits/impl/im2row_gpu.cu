@@ -50,7 +50,7 @@ im2row_gpu_kernel(T* stacked,
     y %= numPatchesY ;  // h in gpapan
 
     /*
-     pick the top-left corer of the patch slice in the input image
+     pick the top-left corner of the patch slice in the input image
      */
     int x_data = x * strideX - padLeft ;    // w_im
     int y_data = y * strideY - padTop ;     // h_im
@@ -216,13 +216,12 @@ __global__ void row2im_gpu_kernel(T* data,
     x_data %= width ;
     y_data %= height ;
 
-    // not 100% sure if i have to do this. Also: numPatchesX and numPatchesY have
-    // already been adjusted before the call to row2im_gpu_kernel, so we don't
-    // have to re-adjust them here. (STATSOGK)
-    int windowHeightEff = windowHeight + (windowHeight-1) * (holeY - 1);
-    int windowWidthEff  = windowWidth  + (windowWidth-1)  * (holeX - 1);
-    int dx = x_data + padLeft - windowWidthEff ; // distance from the start of the corresponding patch in the original image
-    int dy = y_data + padTop  - windowHeightEff ;
+    // x1,x2,y1,y2 is the range of the coordinates of the center points of the
+    // patches that contribute to data[index]. For each one of those patches we
+    // also have to find exactly which pixels in the patch contribute, taking
+    // holes into account.
+    int dx = x_data + padLeft - windowWidth ;
+    int dy = y_data + padTop  - windowHeight ;
     int x1 = (dx >= 0) ? dx/strideX + 1 : 0 ;
     int y1 = (dy >= 0) ? dy/strideY + 1 : 0 ;
     int x2 = min((x_data + padLeft) / strideX, numPatchesX - 1) ;
@@ -236,7 +235,7 @@ __global__ void row2im_gpu_kernel(T* data,
      u(x) = x_data - (x * strideX - padLeft)
      v(y) = y_data - (y * strideY - padRight)
 
-     Now we can comptute the indeces of the elements of stacked[] to accumulate:
+     Now we can compute the indeces of the elements of stacked[] to accumulate:
 
      stackedIndex(x,y) =
      (y * numPatchesX + x) +                 // column offset
@@ -257,14 +256,19 @@ __global__ void row2im_gpu_kernel(T* data,
 
      */
 
-    // stacked is effectively a nPixelsInPatch x nPatches array
+    // stacked is effectively a nPatches x nPixelsPerPatch array
     int deltax = (1 - strideX * numPatchesY * numPatchesX) ;
     int deltay = (1 - strideY * numPatchesY * windowWidth) * numPatchesX ;
     stacked += ((z * windowHeight + y_data + padTop) * windowWidth + (x_data + padLeft)) * (numPatchesX*numPatchesY) ;
 
-    for (int y = y1 ; y <= y2 ; y += holeY) {
-      for (int x = x1 ; x <= x2 ; x += holeX) {
-        accumulator += stacked[y * deltay + x * deltax];
+    for (int y = y1 ; y <= y2 ; ++y) {
+      for (int x = x1 ; x <= x2 ; ++x) {
+        int yOffsetFromPatchStart = y_data - y*strideY + padTop;
+        int xOffsetFromPatchStart = x_data - x*strideX + padLeft;
+        bool isHole = (yOffsetFromPatchStart % holeY) | (xOffsetFromPatchStart % holeX);
+        if (!isHole) {
+          accumulator += stacked[y * deltay + x * deltax];
+        }
       }
     }
     data[index] = accumulator;
@@ -307,10 +311,10 @@ row2im_gpu(T* data,
    numPatchesY,
    dataVolume,
    width, height, depth,
-   windowWidth, windowHeight,
+   windowWidthEff, windowHeightEff,
    strideX, strideY,
    padLeft, padTop,
-   holeX, holeY) ;
+   holeX, holeY);
 
   return cudaPeekAtLastError() ;
 }
