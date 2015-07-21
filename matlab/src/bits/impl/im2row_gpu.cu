@@ -13,6 +13,7 @@ the terms of the BSD license (see the COPYING file).
 #include "im2row.hpp"
 #include "../datacu.hpp"
 #include <iostream>
+#include <string>
 
 using namespace vl ;
 
@@ -229,6 +230,7 @@ __global__ void row2im_gpu_kernel(T* data,
     int x2 = min((x_data + padLeft) / strideX, numPatchesX - 1) ;
     int y2 = min((y_data + padTop) / strideY, numPatchesY - 1) ;
 
+
     /*
      Knowing which patches (x,y) contribute to (x_data,y_data) is not enough;
      we need to determine the specific element within each patch. This
@@ -259,18 +261,27 @@ __global__ void row2im_gpu_kernel(T* data,
      */
 
     // stacked is effectively a nPatches x nPixelsPerPatch array
-    int deltax = (1 - strideX * numPatchesY * numPatchesX) ;
-    int deltay = (1 - strideY * numPatchesY * windowHeightEff) * numPatchesX ;
-    stacked += ((z * windowHeight + y_data + padTop) * windowHeight + (x_data + padLeft)) * (numPatchesX*numPatchesY) ;
+//    int deltax = (1 - strideX * numPatchesY * numPatchesX) ;
+//    int deltay = (1 - strideY * numPatchesY * windowWidth) * numPatchesX ;
+//    stacked += ((z * windowHeight + y_data + padTop) * windowWidth + (x_data + padLeft)) * (numPatchesX*numPatchesY) ;
+//    for (int y = y1 ; y <= y2 ; ++y) {
+//      for (int x = x1 ; x <= x2 ; ++x) {
+//          accumulator += stacked[y * deltay + x * deltax];
+//      }
+//    }
 
     for (int y = y1 ; y <= y2 ; ++y) {
       for (int x = x1 ; x <= x2 ; ++x) {
-//        int yOffsetFromPatchStart = y_data - y*strideY + padTop;
-//        int xOffsetFromPatchStart = x_data - x*strideX + padLeft;
-//        bool isHole = (yOffsetFromPatchStart % holeY) | (xOffsetFromPatchStart % holeX);
-//        if (!isHole) {
-          accumulator += stacked[y * deltay + x * deltax];
-//        }
+        int vy = y_data - y*strideY + padTop;
+        int ux = x_data - x*strideX + padLeft;
+        bool isHole = (ux > 0 && ux <= holeX) || (vy > 0 && vy <= holeY) ||
+                      ((ux % (holeX+1)) > 0)  || ((vy % (holeY+1)) > 0);
+        if (!isHole) {
+          int stackIndex = (y * numPatchesX + x) +                // column offset
+                  ((z * windowHeight + vy) * windowWidth + ux) *  // within patch offset
+                  (numPatchesX*numPatchesY);
+          accumulator += stacked[stackIndex];
+        }
       }
     }
     data[index] = accumulator;
@@ -304,6 +315,11 @@ row2im_gpu(T* data,
   int numPatchesX = (width + (padLeft + padRight) - windowWidthEff)/strideX + 1 ;
   int numPatchesY = (height + (padTop + padBottom) - windowHeightEff)/strideY + 1 ;
   int dataVolume = width * height * depth ;
+
+//  std::cout << "width: " << width << " height: " << height << std::endl;
+//  std::cout << "windowWidth: " << windowWidth << " windowHeight: " << windowHeight << std::endl;
+//  std::cout << "windowWidthEff: " << windowWidthEff << " windowHeightEff: " << windowHeightEff << std::endl;
+
 
   row2im_gpu_kernel<T>
   <<< divideUpwards(dataVolume, VL_CUDA_NUM_THREADS), VL_CUDA_NUM_THREADS >>>
