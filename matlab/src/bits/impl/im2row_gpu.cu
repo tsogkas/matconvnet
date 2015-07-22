@@ -270,15 +270,17 @@ __global__ void row2im_gpu_kernel(T* data,
 //      }
 //    }
 
+
     for (int y = y1 ; y <= y2 ; ++y) {
       for (int x = x1 ; x <= x2 ; ++x) {
-        int vy = y_data - y*strideY + padTop;
-        int ux = x_data - x*strideX + padLeft;
-        bool isHole = (ux > 0 && ux <= holeX) || (vy > 0 && vy <= holeY) ||
-                      ((ux % (holeX+1)) > 0)  || ((vy % (holeY+1)) > 0);
+        int vy = (y_data - y*strideY + padTop);
+        int ux = (x_data - x*strideX + padLeft);
+//        bool isHole = (ux > 0 && ux <= holeX) || (vy > 0 && vy <= holeY) ||
+//                      ((ux % (holeX+1)) > 0)  || ((vy % (holeY+1)) > 0);
+        bool isHole = (vy % holeY) || (ux % holeX);
         if (!isHole) {
           int stackIndex = (y * numPatchesX + x) +                // column offset
-                  ((z * windowHeight + vy) * windowWidth + ux) *  // within patch offset
+                  ((z * windowHeight + vy/holeY) * windowWidth + ux/holeX) *  // within patch offset
                   (numPatchesX*numPatchesY);
           accumulator += stacked[stackIndex];
         }
