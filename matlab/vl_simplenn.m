@@ -262,12 +262,6 @@ if doder
         if ~opts.accumulate
           if isfield(l, 'weights')
             if ~isfield(l, 'hole'), l.hole = 1; end;
-            % keep the elements corresponding to the try that gives best score
-%             if (i+2)<=numel(net.layers) && strcmp(net.layers{i+2}.type, 'softmaxlossmax')  
-%                 sz = [size(res(i+2).x,4), 10];
-%                 inds = sub2ind([sz(1),sz(2)], 1:sz(1), res(i+2).aux);
-%                 res(i).x = res(i).x(:,:,:,inds);
-%             end
             [res(i).dzdx, res(i).dzdw{1}, res(i).dzdw{2}] = ...
                 vl_nnconv(res(i).x, l.weights{1}, l.weights{2}, ...
                           res(i+1).dzdx, ...

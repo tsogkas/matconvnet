@@ -49,7 +49,7 @@ c_ = 1 + ...
   (sz(1)*sz(2)) * c(:)' + ...
   (sz(1)*sz(2)*sz(3)) * floor(c_/(sz(1)*sz(2))) ;
 
-c_(c_ > numel(X)) = [];   %TSOGKAS
+% c_(c_ > numel(X)) = [];   %TSOGKAS
 % compute softmaxloss
 Xmax = max(X,[],3) ;
 ex = exp(bsxfun(@minus, X, Xmax)) ;
