@@ -49,10 +49,11 @@ end
 Xmax = max(X,[],3) ;
 ex = exp(bsxfun(@minus, X, Xmax)) ;
 
-n = sz(1)*sz(2) ;
+valid = c~= 255;
+n = nnz(valid);
 if nargin <= 2
   logtmp = log(sum(ex,3));
-  t = Xmax(c~=255) + logtmp(c~=255) - X(c_);
+  t = Xmax(valid) + logtmp(valid) - X(c_);
   Y = sum(t(:)) / n ;
 else
   Y = bsxfun(@rdivide, ex, sum(ex,3)) ;
