@@ -69,7 +69,7 @@ im2row_cpu(T* stacked,          // #pixelsInPatch x #nPatches
 
   /*
    Fill a row of the stacked image at a time. Since patches are stored
-   along the columns, scanning a row menas visiting all patche once.
+   along the columns, scanning a row means visiting all patche once.
    Each row corresponds to a particular offset within each patch.
 
    In this manner, as we fill a row
