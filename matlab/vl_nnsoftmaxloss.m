@@ -65,9 +65,10 @@ end
 % Original version --------------------------------------------------------
 % %X = X + 1e-6 ;
 % sz = [size(X,1) size(X,2) size(X,3) size(X,4)] ;
+% ignore = c == 255; keep = ~ignore;
 % 
 % % index from 0
-% c = c - 1 ;
+% c(keep) = c(keep) - 1 ;
 % 
 % if numel(c) == sz(4)
 %   % one label per image
@@ -86,19 +87,21 @@ end
 %   (sz(1)*sz(2)) * c(:)' + ...
 %   (sz(1)*sz(2)*sz(3)) * floor(c_/(sz(1)*sz(2))) ;
 % 
-% % c_(c_ > numel(X)) = [];   %TSOGKAS
+% c_(c_ > numel(X)) = [];   %TSOGKAS
+% assert(numel(c_) == nnz(keep))
 % % compute softmaxloss
 % Xmax = max(X,[],3) ;
 % ex = exp(bsxfun(@minus, X, Xmax)) ;
 % 
 % n = sz(1)*sz(2) ;
 % if nargin <= 2
-%   t = Xmax + log(sum(ex,3)) - reshape(X(c_), [sz(1:2) 1 sz(4)]) ;
+%   logtmp = log(sum(ex,3));
+%   t = Xmax(keep) + logtmp(keep) - X(c_)';
 %   Y = sum(t(:)) / n ;
 % else
 %   Y = bsxfun(@rdivide, ex, sum(ex,3)) ;
 %   Y(c_) = Y(c_) - 1;
 %   Y = Y * (dzdy / n) ;
 % end
-% 
-% 
+ 
+ 
