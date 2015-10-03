@@ -40,9 +40,9 @@ else
 end
 
 % convert to indeces
-c_ = false(size(c));
-for i=1:size(c_,3)
-    c_(c_ == i-1) = true;
+c_ = false(size(X));
+for i=1:size(X,3)
+    c_(:,:,i,:) = c == i-1;
 end
 
 % compute softmaxloss
@@ -52,7 +52,7 @@ ex = exp(bsxfun(@minus, X, Xmax)) ;
 n = sz(1)*sz(2) ;
 if nargin <= 2
   logtmp = log(sum(ex,3));
-  t = Xmax(c_) + logtmp(c_) - X(c_);
+  t = Xmax(c~=255) + logtmp(c~=255) - X(c_);
   Y = sum(t(:)) / n ;
 else
   Y = bsxfun(@rdivide, ex, sum(ex,3)) ;
