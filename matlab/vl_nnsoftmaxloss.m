@@ -57,6 +57,7 @@ if nargin <= 2
   Y = sum(t(:)) / n ;
 else
   Y = bsxfun(@rdivide, ex, sum(ex,3)) ;
+  Y(repmat(~valid, 1,1,size(X,3))) = 0;
   Y(c_) = Y(c_) - 1;
   Y = Y * (dzdy / n) ;
 end

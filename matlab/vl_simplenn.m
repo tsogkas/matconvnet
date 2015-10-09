@@ -214,25 +214,6 @@ for i=1:n
       end
     case 'pdist'
       res(i+1) = vl_nnpdist(res(i).x, l.p, 'noRoot', l.noRoot, 'epsilon', l.epsilon) ;
-    % MY LAYERS
-    case 'reshape'
-      res(i+1).x = vl_nnreshape(res(i).x, l.outSize);
-    case 'rbm'  
-      res(i+1).x = vl_nnrbm(res(i).x, l.weights{1},l.weights{2},[], l.imageSize, l.nLabels);
-    case 'bernoulli'
-      res(i+1).x = vl_nnbernoulli(res(i).x);
-    case 'sigmoidNoisy'
-      [res(i+1).x, res(i+1).aux] = vl_nnsigmoidNoisy(res(i).x) ;
-    case 'reparametrize'
-      [res(i+1).x, res(i).aux{1}, res(i).aux{2}, res(i).aux{3} ] = vl_nnreparametrize(res(i).x) ;
-    case 'tanh'
-      res(i+1).x = vl_nntanh(res(i).x);
-    case 'variationloss'
-      res(i+1).x = vl_nnvariationloss(res(i).x, l.class,[],res(i-2).aux{2},res(i-2).aux{3}) ;
-    case 'softmaxlossmax'
-      [res(i+1).x, res(i).aux, res(i).x] = vl_nnsoftmaxlossmax(res(i).x, l.class) ;     
-    case 'softmaxlossIgnore'
-      res(i+1).x = vl_nnsoftmaxlossIgnore(res(i).x, l.class) ;      
     otherwise
       error('Unknown layer type %s', l.type) ;
   end
@@ -354,27 +335,6 @@ if doder
       case 'pdist'
         res(i).dzdx = vl_nnpdist(res(i).x, l.p, res(i+1).dzdx, ...
                                  'noRoot', l.noRoot, 'epsilon', l.epsilon) ;
-      % MY LAYERS
-      case 'reshape'
-        res(i).dzdx = vl_nnreshape(res(i+1).dzdx, size(res(i).x));
-      case 'rbm'
-        [res(i).dzdx, res(i).dzdw{1}, res(i).dzdw{2}] = ...
-            vl_nnrbm(res(i).x, l.weights{1}, l.weights{2}, res(i+1).dzdx,...
-            l.imageSize, l.nLabels);
-      case 'bernoulli'
-        res(i).dzdx = vl_nnbernoulli(res(i+1).x, res(i+1).dzdx);        
-      case 'sigmoidNoisy'
-        res(i).dzdx = vl_nnsigmoidNoisy(res(i).x, res(i+1).dzdx, res(i+1).aux);
-      case 'reparametrize'
-        res(i).dzdx = vl_nnreparametrize(res(i).x, res(i+1).dzdx, res(i).aux{1}, res(i+3).aux); % res(i).aux{1} is the noise e
-      case 'tanh'
-        res(i).dzdx = vl_nntanh(res(i).x, res(i+1).dzdx);        
-      case 'variationloss'  % res(i-3).aux{2}/{3} are the mus and sigmas from the reparametrize layer
-        res(i).dzdx = vl_nnvariationloss(res(i).x, l.class, res(i+1).dzdx,res(i-2).aux{2},res(i-2).aux{3}) ;        
-      case 'softmaxlossmax'
-        [res(i).dzdx] = vl_nnsoftmaxlossmax(res(i).x, l.class, res(i+1).dzdx, res(i).aux) ;        
-      case 'softmaxlossIgnore'
-        res(i).dzdx = vl_nnsoftmaxlossIgnore(res(i).x, l.class, res(i+1).dzdx) ;
       case 'custom'
         res(i) = l.backward(l, res(i), res(i+1)) ;
     end
