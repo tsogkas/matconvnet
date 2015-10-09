@@ -42,7 +42,7 @@ end
 % convert to indeces
 c_ = false(size(X));
 for i=1:size(X,3)
-    c_(:,:,i,:) = c == i-1;
+    c_(:,:,i,:) = c == i;
 end
 
 % compute softmaxloss
