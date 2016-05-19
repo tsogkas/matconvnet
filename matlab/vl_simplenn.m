@@ -208,7 +208,11 @@ for i=1:n
       end
     case 'bnorm'
       if isfield(l, 'weights')
-        res(i+1).x = vl_nnbnorm(res(i).x, l.weights{1}, l.weights{2}) ;
+          if isfield(l, 'mu') 
+            res(i+1).x = vl_nnbnorm_eval(res(i).x, l.weights{1}, l.weights{2}, l.mu, l.sigma) ;
+          else
+            res(i+1).x = vl_nnbnorm(res(i).x, l.weights{1}, l.weights{2}) ;
+          end
       else
         res(i+1).x = vl_nnbnorm(res(i).x, l.filters, l.biases) ;
       end
